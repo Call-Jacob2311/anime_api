@@ -1,0 +1,8 @@
+# System files
+
+*.v2
+*.vsidx
+*.suo
+*.cache
+obj
+anime_api/anime_api/Properties/launchSettings.json
