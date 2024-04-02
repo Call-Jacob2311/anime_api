@@ -6,3 +6,5 @@
 *.cache
 obj
 anime_api/anime_api/Properties/launchSettings.json
+anime_api/anime_api/appsettings.Development.json
+anime_api/anime_api/appsettings.json
