@@ -20,7 +20,7 @@
         /// <summary>
         /// Gets or sets the release date of the anime.
         /// </summary>
-        public DateOnly ReleaseDate { get; set; }
+        public DateTime ReleaseDate { get; set; }
 
         /// <summary>
         /// Gets or sets the number of episodes in the anime.
