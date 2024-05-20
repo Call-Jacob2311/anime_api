@@ -1,0 +1,12 @@
+# System files
+
+*.v2
+*.vsidx
+*.suo
+*.cache
+*.bin
+obj
+SQL
+anime_api/anime_api/Properties/launchSettings.json
+anime_api/anime_api/appsettings.Development.json
+anime_api/anime_api/appsettings.json
