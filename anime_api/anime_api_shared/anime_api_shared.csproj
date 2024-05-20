@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
+    <Folder Include="Models\Manga\" />
+    <Folder Include="Models\Anime_OST\" />
     <Folder Include="Shared\" />
-    <Folder Include="Repositories\" />
   </ItemGroup>
 
 </Project>

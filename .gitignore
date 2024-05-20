@@ -5,8 +5,13 @@
 *.suo
 *.cache
 *.bin
+
+
+# Folders
 obj
 SQL
-anime_api/anime_api/Properties/launchSettings.json
+bin
+.vs
+
 anime_api/anime_api/appsettings.Development.json
-anime_api/anime_api/appsettings.json
+anime_api/anime_api/Properties/launchSettings.json
