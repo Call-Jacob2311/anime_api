@@ -5,6 +5,11 @@
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
+            // Load connection string from configuration file
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            IConfigurationRoot configuration = builder.Build();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
