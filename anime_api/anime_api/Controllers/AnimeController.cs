@@ -1,4 +1,5 @@
 ﻿using anime_api.Models;
+using anime_api.Models.Enums;
 using anime_api_shared.Models.Anime;
 using anime_api_shared.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -77,7 +78,7 @@ namespace anime_api.Controllers
         {
             try
             {
-                // TODO: Once I add endpoint to get Studios, need validation on the studio id. Also need to vlaidate zeros
+                // TODO: Once I add endpoint to get Studios, need validation on the studio id. Also need to validate zeros
                 //Validation.
                 if (model == null)
                 {
@@ -91,12 +92,109 @@ namespace anime_api.Controllers
                     // Add to db.
                     var result = await _animeService.AddAnimeAsync(model);
 
-                    // Results
-                    return Ok(result);
+                    // Validate result and send correct response
+                    if (result == ResponseStatus.Success.ToString())
+                    {
+                        return Ok(result);
+                    } else
+                    {
+                        return BadRequest("Error creating anime. Please validate and try again.");
+                    }
                 } else
                 {
                     return BadRequest(model.AnimeName + " already exists. Please validate and try again.");
                 }  
+            }
+            catch (Exception ex)
+            {
+                var exceptionErrorModel = new ExceptionErrorModel(ex.Message, ex.StackTrace);
+                return BadRequest(exceptionErrorModel);
+            }
+        }
+
+        /// <summary>
+        /// Update a anime in the database.
+        /// </summary>
+        /// <returns>Validation string for record update.</returns>
+        [HttpPut()]
+        [ProducesResponseType(typeof(string), 200)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
+        public async Task<ActionResult> UpdateAnime(AnimePutModel model)
+        {
+            try
+            {
+                // TODO: Once I add endpoint to get Studios, need validation on the studio id. Also need to validate zeros
+                //Validation.
+                if (model == null)
+                {
+                    return BadRequest("Model cannot be null or empty.");
+                }
+
+                // Make sure record doesn't already exist
+                var checkName = await _animeService.GetAnimeAsync(model.AnimeName.ToLower());
+                if (string.IsNullOrEmpty(checkName.AnimeName) || model.AnimeId != checkName.AnimeId)
+                {
+                    // Add to db.
+                    var result = await _animeService.UpdateAnimeAsync(model);
+
+                    // Validate result and send correct response
+                    if (result == ResponseStatus.Success.ToString())
+                    {
+                        return Ok(result);
+                    }
+                    else
+                    {
+                        return BadRequest("Error updating anime. Please validate and try again.");
+                    }
+                }
+                else
+                {
+                    return NotFound(model.AnimeName + " doesn't exists. Please validate and try again.");
+                }
+            }
+            catch (Exception ex)
+            {
+                var exceptionErrorModel = new ExceptionErrorModel(ex.Message, ex.StackTrace);
+                return BadRequest(exceptionErrorModel);
+            }
+        }
+
+        /// <summary>
+        /// Soft delete a anime in the database.
+        /// </summary>
+        /// <returns>Validation string for record deletion.</returns>
+        [HttpDelete("{animeName}")]
+        [ProducesResponseType(typeof(string), 200)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
+        public async Task<ActionResult> DeleteAnime(string animeName)
+        {
+            try
+            {
+                // Validate param
+                if (string.IsNullOrEmpty(animeName))
+                {
+                    return BadRequest("Anime name cannot be null or empty.");
+                }
+
+                // Converting to lower case to remove any future case senstive issues.
+                var convertedName = animeName.ToLower();
+
+                // Validate record exists result.
+                var getResult = await _animeService.GetAnimeAsync(convertedName);
+
+                // Flag for missing result
+                if (string.IsNullOrEmpty(getResult.AnimeName))
+                {
+                    return NotFound($"{animeName} doesn't exist in the database. Please validate and try again.");
+                }
+
+                // Get result.
+                var result = await _animeService.DeleteAnimeAsync(convertedName);
+
+                // Results
+                return Ok(result);
             }
             catch (Exception ex)
             {

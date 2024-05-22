@@ -7,6 +7,8 @@ namespace anime_api_shared.Services
     {
         Task<AnimeGetModel> GetAnimeAsync(string animeName);
         Task<string> AddAnimeAsync(AnimePostModel model);
+        Task<string> UpdateAnimeAsync(AnimePutModel model);
+        Task<string> DeleteAnimeAsync(string animeName);
     }
 
     public class AnimeService : IAnimeService
@@ -32,10 +34,30 @@ namespace anime_api_shared.Services
         {
             if (model == null)
             {
-                throw new ArgumentException("Anime name cannot be null or empty.", nameof(model));
+                throw new ArgumentException("Payload model cannot be null or empty.", nameof(model));
             }
 
             return await _repository.AddAnimeAsync(model);
+        }
+
+        public async Task<string> UpdateAnimeAsync(AnimePutModel model)
+        {
+            if (model == null)
+            {
+                throw new ArgumentException("Payload model cannot be null or empty.", nameof(model));
+            }
+
+            return await _repository.UpdateAnimeAsync(model);
+        }
+
+        public async Task<string> DeleteAnimeAsync(string animeName)
+        {
+            if (string.IsNullOrEmpty(animeName))
+            {
+                throw new ArgumentException("Anime name cannot be null or empty.", nameof(animeName));
+            }
+
+            return await _repository.DeleteAnimeAsync(animeName);
         }
     }
 }

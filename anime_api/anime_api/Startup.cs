@@ -1,3 +1,4 @@
+using anime_api.Services;
 using anime_api_shared.Repositories;
 using anime_api_shared.Services;
 using Microsoft.OpenApi.Models;
@@ -31,6 +32,8 @@ namespace anime_api
             // Register application services
             services.AddScoped<IAnimeRepository, AnimeRepository>();
             services.AddScoped<IAnimeService, AnimeService>();
+            services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
+            
 
             // Configure Swagger
             services.AddSwaggerGen(c =>
