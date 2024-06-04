@@ -10,7 +10,9 @@ namespace anime_api_shared.Repositories
     public interface IAnimeRepository
     {
         Task<AnimeGetModel> GetAnimeAsync(string animeName);
-        Task<string> AddAnimeAsync(AnimePostModel model);
+        Task<List<AnimeGetModel>> GetAllAnimeAsync(int startIndex, int pageSize);
+        Task<Dictionary<string, string>> AddAnimeAsync(AnimePostModel anime);
+        Task<Dictionary<string, string>> AddAnimeBulkAsync(List<AnimePostModel> animeList);
         Task<string> UpdateAnimeAsync(AnimePutModel model);
         Task<string> DeleteAnimeAsync(string animeName);
     }
@@ -50,18 +52,19 @@ namespace anime_api_shared.Repositories
             }
         }
 
-        public async Task<string> AddAnimeAsync(AnimePostModel model)
+        public async Task<Dictionary<string, string>> AddAnimeAsync(AnimePostModel anime)
         {
+            var results = new Dictionary<string, string>();
             using var connection = await _dbConnectionFactory.CreateConnectionAsync();
             try
             {
-                var parameters = new DynamicParameters();
-                parameters.Add("@animeName", model.AnimeName, DbType.String);
-                parameters.Add("@animeStatus", model.AnimeStatus, DbType.String);
-                parameters.Add("@studioId", model.StudioId, DbType.Int16);
-                parameters.Add("@releaseDate", model.ReleaseDate, DbType.Date);
-                parameters.Add("@episodeCount", model.EpisodeCount, DbType.Int16);
-                parameters.Add("@genres", model.Genres, DbType.String);
+                DynamicParameters parameters = new();
+                parameters.Add("@animeName", anime.AnimeName, DbType.String);
+                parameters.Add("@animeStatus", anime.AnimeStatus, DbType.String);
+                parameters.Add("@studioId", anime.StudioId, DbType.Int16);
+                parameters.Add("@releaseDate", anime.ReleaseDate, DbType.Date);
+                parameters.Add("@episodeCount", anime.EpisodeCount, DbType.Int16);
+                parameters.Add("@genres", anime.Genres, DbType.String);
                 parameters.Add("@recordCreation", DateTime.Now, DbType.DateTime);
                 parameters.Add("@createdBy", "Jacob C.", DbType.String);
                 // Output of the stored procedure gets saved into this param.
@@ -69,18 +72,21 @@ namespace anime_api_shared.Repositories
 
                 var execute = await connection.ExecuteAsync("AddAnime", parameters, commandType: CommandType.StoredProcedure);
 
-                return "Success";
+                results.Add("Success: " + anime.AnimeName, "Successfully created the record: " + anime.AnimeName);
+
+                return results;
             }
             catch (SqlException ex)
             {
-                Log.Error(ex, "Error creating anime details for: {AnimeName}", model.AnimeName);
+                Log.Error(ex, "Error creating anime details for: {AnimeName}", anime.AnimeName);
                 throw;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Unexpected error creating anime details for: {AnimeName}", model.AnimeName);
+                Log.Error(ex, "Unexpected error creating anime details for: {AnimeName}", anime.AnimeName);
                 throw;
             }
+
         }
 
         public async Task<string> UpdateAnimeAsync(AnimePutModel model)
@@ -141,6 +147,16 @@ namespace anime_api_shared.Repositories
                     throw;
                 }
             }
+        }
+
+        public Task<List<AnimeGetModel>> GetAllAnimeAsync(int startIndex, int pageSize)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Dictionary<string, string>> AddAnimeBulkAsync(List<AnimePostModel> animeList)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -40,13 +40,13 @@ namespace anime_api
             {
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Title = "Your API",
+                    Title = "Anime API",
                     Version = "v1",
-                    Description = "A simple example ASP.NET Core Web API",
+                    Description = "API for C# solution related to anime/manga/etc.",
                     Contact = new OpenApiContact
                     {
-                        Name = "Your Name",
-                        Email = "your-email@example.com",
+                        Name = "Jacob Call",
+                        Email = "dehholio@gmail.com",
                         Url = new Uri("https://yourwebsite.com")
                     },
                     License = new OpenApiLicense
