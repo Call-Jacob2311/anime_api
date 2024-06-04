@@ -6,7 +6,7 @@ namespace anime_api_shared.Services
     public interface IAnimeService
     {
         Task<AnimeGetModel> GetAnimeAsync(string animeName);
-        Task<List<AnimeGetModel>> GetAllAnimeAsync(int startIndex, int pageSize);
+        Task<List<AnimeGetModel>> GetAllAnimeAsync();
         Task<Dictionary<string, string>> AddAnimeAsync(AnimePostModel anime);
         Task<Dictionary<string, string>> AddAnimeBulkAsync(List<AnimePostModel> animeList);
         Task<string> UpdateAnimeAsync(AnimePutModel model);
@@ -32,9 +32,9 @@ namespace anime_api_shared.Services
             return await _repository.GetAnimeAsync(animeName);
         }
 
-        public async Task<List<AnimeGetModel>> GetAllAnimeAsync(int startIndex, int pageSize)
+        public async Task<List<AnimeGetModel>> GetAllAnimeAsync()
         {
-            return await _repository.GetAllAnimeAsync(startIndex, pageSize);
+            return await _repository.GetAllAnimeAsync();
         }
 
         public async Task<Dictionary<string, string>> AddAnimeAsync(AnimePostModel anime)

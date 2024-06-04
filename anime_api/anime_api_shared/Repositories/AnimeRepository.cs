@@ -4,13 +4,14 @@ using Dapper;
 using Serilog;
 using System.Data;
 using System.Data.SqlClient;
+using System.Xml.Linq;
 
 namespace anime_api_shared.Repositories
 {
     public interface IAnimeRepository
     {
         Task<AnimeGetModel> GetAnimeAsync(string animeName);
-        Task<List<AnimeGetModel>> GetAllAnimeAsync(int startIndex, int pageSize);
+        Task<List<AnimeGetModel>> GetAllAnimeAsync();
         Task<Dictionary<string, string>> AddAnimeAsync(AnimePostModel anime);
         Task<Dictionary<string, string>> AddAnimeBulkAsync(List<AnimePostModel> animeList);
         Task<string> UpdateAnimeAsync(AnimePutModel model);
@@ -26,6 +27,7 @@ namespace anime_api_shared.Repositories
             _dbConnectionFactory = dbConnectionFactory ?? throw new ArgumentNullException(nameof(dbConnectionFactory));
         }
 
+        #region GET
         public async Task<AnimeGetModel> GetAnimeAsync(string animeName)
         {
             using (var connection = await _dbConnectionFactory.CreateConnectionAsync())
@@ -52,6 +54,38 @@ namespace anime_api_shared.Repositories
             }
         }
 
+        public async Task<List<AnimeGetModel>> GetAllAnimeAsync()
+        {
+            using (var connection = await _dbConnectionFactory.CreateConnectionAsync())
+            {
+                try
+                {
+                    List<AnimeGetModel> animeGetModels = [];
+                    var parameters = new DynamicParameters();
+
+                    var result = await connection.QueryAsync<AnimeGetModel>("GetAllAnime", parameters, commandType: CommandType.StoredProcedure);
+                    foreach (var item in result)
+                    {
+                        animeGetModels.Add(item);
+                    }
+
+                    return animeGetModels;
+                }
+                catch (SqlException ex)
+                {
+                    Log.Error(ex, "Error fetching all anime details.");
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Error fetching all anime details.");
+                    throw;
+                }
+            }
+        }
+        #endregion
+
+        #region POST
         public async Task<Dictionary<string, string>> AddAnimeAsync(AnimePostModel anime)
         {
             var results = new Dictionary<string, string>();
@@ -67,8 +101,7 @@ namespace anime_api_shared.Repositories
                 parameters.Add("@genres", anime.Genres, DbType.String);
                 parameters.Add("@recordCreation", DateTime.Now, DbType.DateTime);
                 parameters.Add("@createdBy", "Jacob C.", DbType.String);
-                // Output of the stored procedure gets saved into this param.
-                parameters.Add("@response", DbType.Int32, direction: ParameterDirection.ReturnValue);
+                parameters.Add("@response", DbType.Int32, direction: ParameterDirection.ReturnValue); // Output of the stored procedure gets saved into this param.
 
                 var execute = await connection.ExecuteAsync("AddAnime", parameters, commandType: CommandType.StoredProcedure);
 
@@ -86,9 +119,56 @@ namespace anime_api_shared.Repositories
                 Log.Error(ex, "Unexpected error creating anime details for: {AnimeName}", anime.AnimeName);
                 throw;
             }
-
         }
 
+        public async Task<Dictionary<string, string>> AddAnimeBulkAsync(List<AnimePostModel> animeList)
+        {
+            var results = new Dictionary<string, string>();
+            using var connection = await _dbConnectionFactory.CreateConnectionAsync();
+            try
+            {
+                foreach (var anime in animeList)
+                {
+                    DynamicParameters parameters = new();
+                    parameters.Add("@animeName", anime.AnimeName, DbType.String);
+                    parameters.Add("@animeStatus", anime.AnimeStatus, DbType.String);
+                    parameters.Add("@studioId", anime.StudioId, DbType.Int16);
+                    parameters.Add("@releaseDate", anime.ReleaseDate, DbType.Date);
+                    parameters.Add("@episodeCount", anime.EpisodeCount, DbType.Int16);
+                    parameters.Add("@genres", anime.Genres, DbType.String);
+                    parameters.Add("@recordCreation", DateTime.Now, DbType.DateTime);
+                    parameters.Add("@createdBy", "Jacob C.", DbType.String);
+                    parameters.Add("@response", DbType.Int32, direction: ParameterDirection.ReturnValue); // Output of the stored procedure gets saved into this param.
+
+                    var execute = await connection.ExecuteAsync("AddAnime", parameters, commandType: CommandType.StoredProcedure);
+                    var isSuccess = parameters.Get<int>("@response");
+
+                    if (isSuccess == 1)
+                    {
+                        results.Add("Success: " + anime.AnimeName, "Successfully created the record: " + anime.AnimeName);
+                    }
+                    else
+                    {
+                        results.Add("Failure: " + anime.AnimeName, "Failed to create record for: " + anime.AnimeName);
+                    }
+                    
+                }
+                return results;
+            }
+            catch (SqlException ex)
+            {
+                Log.Error(ex, "Error creating multiple anime details. Please validate and try again.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error creating multiple anime details. Please validate and try again.");
+                throw;
+            }
+        }
+        #endregion
+
+        #region PUT
         public async Task<string> UpdateAnimeAsync(AnimePutModel model)
         {
             using var connection = await _dbConnectionFactory.CreateConnectionAsync();
@@ -122,7 +202,9 @@ namespace anime_api_shared.Repositories
                 throw;
             }
         }
+        #endregion
 
+        #region DELETE
         public async Task<string> DeleteAnimeAsync(string animeName)
         {
             using (var connection = await _dbConnectionFactory.CreateConnectionAsync())
@@ -148,15 +230,6 @@ namespace anime_api_shared.Repositories
                 }
             }
         }
-
-        public Task<List<AnimeGetModel>> GetAllAnimeAsync(int startIndex, int pageSize)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Dictionary<string, string>> AddAnimeBulkAsync(List<AnimePostModel> animeList)
-        {
-            throw new NotImplementedException();
-        }
+        #endregion
     }
 }

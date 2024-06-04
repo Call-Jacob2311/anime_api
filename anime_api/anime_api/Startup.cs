@@ -1,6 +1,9 @@
 using anime_api.Services;
+using anime_api_shared.Models.ModelValidations;
 using anime_api_shared.Repositories;
 using anime_api_shared.Services;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.OpenApi.Models;
 
 namespace anime_api
@@ -33,7 +36,13 @@ namespace anime_api
             services.AddScoped<IAnimeRepository, AnimeRepository>();
             services.AddScoped<IAnimeService, AnimeService>();
             services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
-            
+
+            // Register FluentValidation validators
+            services.AddValidatorsFromAssemblyContaining<AnimePostModelValidator>();
+
+            // Configure FluentValidation with MVC
+            services.AddFluentValidationAutoValidation();
+            services.AddFluentValidationClientsideAdapters();
 
             // Configure Swagger
             services.AddSwaggerGen(c =>
@@ -101,6 +110,8 @@ namespace anime_api
                 app.UseHsts();
             }
 
+            // Using middleware for global exception handling to avoid repeating try-catch blocks.
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
