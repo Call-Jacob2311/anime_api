@@ -6,7 +6,11 @@ namespace anime_api_shared.Services
     public interface IAnimeService
     {
         Task<AnimeGetModel> GetAnimeAsync(string animeName);
-        Task<string> AddAnimeAsync(string animeName);
+        Task<List<AnimeGetModel>> GetAllAnimeAsync();
+        Task<Dictionary<string, string>> AddAnimeAsync(AnimePostModel anime);
+        Task<Dictionary<string, string>> AddAnimeBulkAsync(List<AnimePostModel> animeList);
+        Task<string> UpdateAnimeAsync(AnimePutModel model);
+        Task<string> DeleteAnimeAsync(string animeName);
     }
 
     public class AnimeService : IAnimeService
@@ -28,14 +32,49 @@ namespace anime_api_shared.Services
             return await _repository.GetAnimeAsync(animeName);
         }
 
-        public async Task<string> AddAnimeAsync(string animeName)
+        public async Task<List<AnimeGetModel>> GetAllAnimeAsync()
+        {
+            return await _repository.GetAllAnimeAsync();
+        }
+
+        public async Task<Dictionary<string, string>> AddAnimeAsync(AnimePostModel anime)
+        {
+            if (anime == null)
+            {
+                throw new ArgumentException("Payload model cannot be null or empty.", nameof(anime));
+            }
+
+            return await _repository.AddAnimeAsync(anime);
+        }
+
+        public async Task<Dictionary<string, string>> AddAnimeBulkAsync(List<AnimePostModel> animeList)
+        {
+            if (animeList == null)
+            {
+                throw new ArgumentException("Payload model cannot be null or empty.", nameof(animeList));
+            }
+
+            return await _repository.AddAnimeBulkAsync(animeList);
+        }
+
+        public async Task<string> UpdateAnimeAsync(AnimePutModel model)
+        {
+            if (model == null)
+            {
+                throw new ArgumentException("Payload model cannot be null or empty.", nameof(model));
+            }
+
+            return await _repository.UpdateAnimeAsync(model);
+        }
+
+        public async Task<string> DeleteAnimeAsync(string animeName)
         {
             if (string.IsNullOrEmpty(animeName))
             {
                 throw new ArgumentException("Anime name cannot be null or empty.", nameof(animeName));
             }
 
-            return await _repository.AddAnimeAsync(animeName);
+            return await _repository.DeleteAnimeAsync(animeName);
         }
     }
 }
