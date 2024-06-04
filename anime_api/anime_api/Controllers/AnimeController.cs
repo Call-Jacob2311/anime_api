@@ -128,7 +128,6 @@ namespace anime_api.Controllers
         [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
         public async Task<ActionResult> AddAnimeBulk(List<AnimePostModel> animeList)
         {
-            var validationResults = new Dictionary<string, string>();
             int successCount = 0;
             int failureCount = 0;
 
