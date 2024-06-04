@@ -36,5 +36,19 @@
         /// Gets or sets the genres of the anime.
         /// </summary>
         public string Genres { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AnimeGetModel"/> class.
+        /// </summary>
+        public AnimeGetModel(int animeId, string animeName, string animeStatus, string studioName, DateTime releaseDate, int episodeCount, string genres)
+        {
+            AnimeId = animeId;
+            AnimeName = animeName ?? throw new ArgumentNullException(nameof(animeName));
+            AnimeStatus = animeStatus ?? throw new ArgumentNullException(nameof(animeStatus));
+            StudioName = studioName ?? throw new ArgumentNullException(nameof(studioName));
+            ReleaseDate = releaseDate;
+            EpisodeCount = episodeCount;
+            Genres = genres ?? throw new ArgumentNullException(nameof(genres));
+        }
     }
 }
