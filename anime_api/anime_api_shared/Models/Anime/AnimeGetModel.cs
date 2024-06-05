@@ -40,6 +40,11 @@
         /// <summary>
         /// Initializes a new instance of the <see cref="AnimeGetModel"/> class.
         /// </summary>
+        public AnimeGetModel() { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AnimeGetModel"/> class with parameters.
+        /// </summary>
         public AnimeGetModel(int animeId, string animeName, string animeStatus, string studioName, DateTime releaseDate, int episodeCount, string genres)
         {
             AnimeId = animeId;

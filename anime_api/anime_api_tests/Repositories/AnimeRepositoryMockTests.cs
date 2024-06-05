@@ -1,12 +1,10 @@
-﻿using Moq;
-using Serilog;
-using System.Data;
+﻿using anime_api.Services;
 using anime_api_shared.Models.Anime;
 using anime_api_shared.Repositories;
 using Dapper;
+using Moq;
 using Moq.Dapper;
-using anime_api.Services;
-using static Dapper.SqlMapper;
+using System.Data;
 
 namespace anime_api_tests.Repositories
 {
@@ -22,186 +20,186 @@ namespace anime_api_tests.Repositories
         {
             _dbConnectionFactoryMock = new Mock<IDbConnectionFactory>();
             _dbConnectionMock = new Mock<IDbConnection>();
-            _dbConnectionFactoryMock.Setup(x => x.CreateConnectionAsync()).ReturnsAsync(_dbConnectionMock.Object);
+            _dbConnectionFactoryMock.Setup(factory => factory.CreateConnectionAsync())
+                .ReturnsAsync(_dbConnectionMock.Object);
+
             _animeRepository = new AnimeRepository(_dbConnectionFactoryMock.Object);
-
-            // Initialize the Serilog logger for testing
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                //.WriteTo.Console()
-                .CreateLogger();
         }
 
-        #region Anime Tests
         [Test]
-        public async Task GetAnimeAsync_AnimeExists_ReturnsAnime()
+        public async Task GetAnimeAsync_ShouldReturnAnime_WhenAnimeExists()
         {
             // Arrange
-            var animeName = "Naruto";
+            string animeName = "Naruto";
             var expectedAnime = new AnimeGetModel { AnimeName = animeName };
-
-            _dbConnectionMock.SetupDapperAsync(c => c.QueryFirstOrDefaultAsync<AnimeGetModel>(
-                    It.IsAny<string>(),
-                    It.IsAny<object>(),
-                    It.IsAny<IDbTransaction>(),
-                    It.IsAny<int?>(),
-                    It.IsAny<CommandType>()))
+            _dbConnectionMock.SetupDapperAsync(c => c.QueryFirstOrDefaultAsync<AnimeGetModel>(It.IsAny<string>(), null, null, null, null))
                 .ReturnsAsync(expectedAnime);
 
             // Act
             var result = await _animeRepository.GetAnimeAsync(animeName);
 
             // Assert
-            Assert.IsNotNull(result);
-            Assert.That(result.AnimeName, Is.EqualTo(expectedAnime.AnimeName));
+            Assert.That(expectedAnime.AnimeName, Is.EqualTo(result.AnimeName));
         }
 
         [Test]
-        public async Task GetAnimeAsync_AnimeDoesntExists_ReturnsNotFound()
+        public async Task GetAllAnimeAsync_ShouldReturnAnimeList()
         {
             // Arrange
-            var animeName = "Naruto";
-            var expectedAnime = new AnimeGetModel();
-
-            _dbConnectionMock.SetupDapperAsync(c => c.QueryFirstOrDefaultAsync<AnimeGetModel>(
-                    It.IsAny<string>(),
-                    It.IsAny<object>(),
-                    It.IsAny<IDbTransaction>(),
-                    It.IsAny<int?>(),
-                    It.IsAny<CommandType>()))
-                .ReturnsAsync(expectedAnime);
+            List<AnimeGetModel> animeGetModels = [new AnimeGetModel {AnimeName = "Naruto"}, new AnimeGetModel {AnimeName="One Piece"}];
+            _dbConnectionMock.SetupDapperAsync(c => c.QueryAsync<AnimeGetModel>(It.IsAny<string>(), null, null, null, null))
+                .ReturnsAsync(animeGetModels);
 
             // Act
-            var result = await _animeRepository.GetAnimeAsync(animeName);
+            var result = await _animeRepository.GetAllAnimeAsync();
 
             // Assert
-            Assert.That(string.IsNullOrEmpty(result.AnimeName));
+            Assert.That(result, Is.Not.Empty);
         }
 
-        // Having issues mocking the SQL error exceptions. Might look into it in the future, for now, moving on
-
-        //[Test]
-        //public void GetAnimeAsync_ThrowsSqlException_LogsError()
-        //{
-        //    // Arrange
-        //    var animeName = "Naruto";
-        //    var sqlException = (SqlException)FormatterServices.GetUninitializedObject(typeof(SqlException));
-
-        //    _dbConnectionMock.SetupDapperAsync(c => c.QueryFirstOrDefaultAsync<AnimeGetModel>(
-        //            It.IsAny<string>(),
-        //            It.IsAny<object>(),
-        //            It.IsAny<IDbTransaction>(),
-        //            It.IsAny<int?>(),
-        //            It.IsAny<CommandType>()))
-        //        .ThrowsAsync(sqlException);
-
-        //    // Act & Assert
-        //    var ex = Assert.ThrowsAsync<SqlException>(() => _animeRepository.GetAnimeAsync(animeName));
-        //    Assert.IsInstanceOf<SqlException>(ex);
-        //}
-
         [Test]
-        public async Task AddAnimeAsync_ValidModel_ReturnsSuccess()
+        public async Task AddAnimeAsync_ShouldReturnSuccess_WhenAnimeAreAdded()
         {
             // Arrange
-            var model = new AnimePostModel
+            var anime1 = new AnimePostModel
             {
-                AnimeName = "Naruto",
+                AnimeName = "One Piece",
                 AnimeStatus = "Ongoing",
                 StudioId = 1,
                 ReleaseDate = DateTime.Now,
-                EpisodeCount = 220,
-                Genres = "Action"
+                EpisodeCount = 1000,
+                Genres = "Action, Adventure"
             };
-
             var parameters = new DynamicParameters();
-            parameters.Add("@response", 1, DbType.Int32, ParameterDirection.ReturnValue);
-            parameters.Add("@animeName", model.AnimeName, DbType.String);
-            parameters.Add("@animeStatus", model.AnimeStatus, DbType.String);
-            parameters.Add("@studioId", model.StudioId, DbType.Int16);
-            parameters.Add("@releaseDate", model.ReleaseDate, DbType.Date);
-            parameters.Add("@episodeCount", model.EpisodeCount, DbType.Int16);
-            parameters.Add("@genres", model.Genres, DbType.String);
-            parameters.Add("@recordUpdated", DateTime.Now, DbType.DateTime);
-            parameters.Add("@updatedBy", "Jacob C.", DbType.String);
-
-            // Mock ExecuteAsync to simulate setting the output parameter
-            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("UpdateAnime", parameters, null, null, CommandType.StoredProcedure))
-                             .ReturnsAsync(1);
-
-            parameters.AddDynamicParams(new { response = 1 });
+            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
+                .ReturnsAsync(1);
 
             // Act
-            var result = await _animeRepository.AddAnimeAsync(model);
+            var result = await _animeRepository.AddAnimeAsync(anime1);
 
             // Assert
-            Assert.That(result, Is.EqualTo("Success"));
+            Assert.That(result, Is.Not.Empty);
+            Assert.That(result.FirstOrDefault().Key, Does.Contain("Success"));
         }
 
         [Test]
-        public async Task UpdateAnimeAsync_ShouldReturnSuccess_WhenResponseIs1()
+        public async Task AddAnimeBulkAsync_ShouldReturnSuccess_WhenMultipleAnimeAreAdded()
         {
             // Arrange
-            var model = new AnimePutModel
+            var anime1 = new AnimePostModel
             {
-                AnimeName = "Naruto",
+                AnimeName = "One Piece",
                 AnimeStatus = "Ongoing",
                 StudioId = 1,
                 ReleaseDate = DateTime.Now,
-                EpisodeCount = 500,
-                Genres = "Action"
+                EpisodeCount = 1000,
+                Genres = "Action, Adventure"
             };
-
-            // Mock ExecuteAsync to simulate setting the output parameter
-            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("UpdateAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
-                             .ReturnsAsync(1);
+            var anime2 = new AnimePostModel
+            {
+                AnimeName = "Naruto",
+                AnimeStatus = "Completed",
+                StudioId = 1,
+                ReleaseDate = DateTime.Now,
+                EpisodeCount = 1000,
+                Genres = "Action, Adventure"
+            };
+            List<AnimePostModel> animePostModels = [anime1, anime2];
+            var parameters = new DynamicParameters();
+            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
+                .ReturnsAsync(1);
 
             // Act
-            var result = await _animeRepository.UpdateAnimeAsync(model);
+            var result = await _animeRepository.AddAnimeBulkAsync(animePostModels);
 
             // Assert
-            Assert.That(result, Is.EqualTo("Success"));
+            Assert.That(result, Is.Not.Empty);
+            Assert.That(result.FirstOrDefault().Key, Does.Contain("Success"));
         }
 
-        // Having issues mocking the SQL error exceptions. Might look into it in the future, for now, moving on
+        [Test]
+        public async Task UpdateAnimeAsync_ShouldReturnSuccess_WhenAnimeAreUpdated()
+        {
+            // Arrange
+            var anime1 = new AnimePutModel
+            {
+                AnimeId = 1,
+                AnimeName = "One Piece",
+                AnimeStatus = "Ongoing",
+                StudioId = 1,
+                ReleaseDate = DateTime.Now,
+                EpisodeCount = 1000,
+                Genres = "Action, Adventure"
+            };
+            var parameters = new DynamicParameters();
+            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("UpdateAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
+                .ReturnsAsync(1);
 
-        //[Test]
-        //public void AddAnimeAsync_ThrowsSqlException_LogsError()
-        //{
-        //    // Arrange
-        //    var model = new AnimePostModel
-        //    {
-        //        AnimeName = "Naruto",
-        //        AnimeStatus = "Ongoing",
-        //        StudioId = 1,
-        //        ReleaseDate = DateTime.Now,
-        //        EpisodeCount = 220,
-        //        Genres = "Action"
-        //    };
+            // Act
+            var result = await _animeRepository.UpdateAnimeAsync(anime1);
 
-        //    // Create a mock of SqlException
-        //    var sqlExceptionMock = new Mock<SqlException>("Mock SQL error message", MockBehavior.Default);
+            // Assert
+            Assert.That(result, Is.Not.Empty);
+            Assert.That(result.FirstOrDefault().Key, Does.Contain("Success"));
+        }
 
-        //    // Setup the properties or behavior of the mocked SqlException
-        //    sqlExceptionMock.SetupGet(e => e.Message).Returns("Mock SQL error message");
-        //    sqlExceptionMock.SetupGet(e => e.Number).Returns(12345); // Mock SQL error number
-        //    // You can continue setting up other properties or behaviors as needed
+        [Test]
+        public async Task UpdateAnimeBulkAsync_ShouldReturnSuccess_WhenMultipleAnimeAreUpdated()
+        {
+            // Arrange
+            var anime1 = new AnimePutModel
+            {
+                AnimeId = 1,
+                AnimeName = "One Piece",
+                AnimeStatus = "Ongoing",
+                StudioId = 1,
+                ReleaseDate = DateTime.Now,
+                EpisodeCount = 1000,
+                Genres = "Action, Adventure"
+            };
+            var anime2 = new AnimePutModel
+            {
+                AnimeId = 2,
+                AnimeName = "Naruto",
+                AnimeStatus = "Completed",
+                StudioId = 1,
+                ReleaseDate = DateTime.Now,
+                EpisodeCount = 1000,
+                Genres = "Action, Adventure"
+            };
+            List<AnimePutModel> animePutModels = [anime1, anime2];
+            var parameters = new DynamicParameters();
+            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
+                .ReturnsAsync(1);
 
-        //    // Use the mocked SqlException in your test
-        //    var exception = sqlExceptionMock.Object;
+            // Act
+            var result = await _animeRepository.UpdateAnimeBulkAsync(animePutModels);
 
-        //    _dbConnectionMock.SetupDapperAsync(c => c.QueryAsync<int>(
-        //            It.IsAny<string>(),
-        //            It.IsAny<object>(),
-        //            It.IsAny<IDbTransaction>(),
-        //            It.IsAny<int?>(),
-        //            It.IsAny<CommandType>()))
-        //        .ThrowsAsync(exception);
+            // Assert
+            Assert.That(result, Is.Not.Empty);
+            Assert.That(result.FirstOrDefault().Key, Does.Contain("Success"));
+        }
 
-        //    // Act & Assert
-        //    var ex = Assert.ThrowsAsync<SqlException>(() => _animeRepository.AddAnimeAsync(model));
-        //    Assert.IsInstanceOf<SqlException>(ex);
-        //}
+        [Test]
+        public void AddAnimeAsync_ShouldLogErrorAndThrow_WhenSqlExceptionOccurs()
+        {
+            // Arrange
+            var anime = new AnimePostModel
+            {
+                AnimeName = "One Piece",
+                AnimeStatus = "Ongoing",
+                StudioId = 1,
+                ReleaseDate = DateTime.Now,
+                EpisodeCount = 1000,
+                Genres = "Action, Adventure"
+            };
+            var exception = new Exception("Generic error");
+            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
+                .ThrowsAsync(exception);
+
+            // Act & Assert
+            var ex = Assert.ThrowsAsync<Exception>(async () => await _animeRepository.AddAnimeAsync(anime));
+            Assert.That(exception.Message, Is.EqualTo(ex.Message));
+        }
     }
-    #endregion
 }

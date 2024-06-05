@@ -17,15 +17,17 @@ namespace anime_api.Controllers
     {
         private readonly IAnimeService _animeService;
         private readonly IValidator<AnimePostModel> _postValidator;
+        private readonly IValidator<AnimePutModel> _putValidator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AnimeController"/> class.
         /// </summary>
         /// <param name="animeService">The anime service.</param>
-        public AnimeController(IAnimeService animeService, IValidator<AnimePostModel> postValidator)
+        public AnimeController(IAnimeService animeService, IValidator<AnimePostModel> postValidator, IValidator<AnimePutModel> putValidator)
         {
             _animeService = animeService ?? throw new ArgumentNullException(nameof(animeService));
             _postValidator = postValidator ?? throw new ArgumentNullException(nameof(postValidator));
+            _putValidator = putValidator ?? throw new ArgumentNullException(nameof(putValidator));
         }
 
         #region GET endpoints
@@ -38,13 +40,15 @@ namespace anime_api.Controllers
         [ProducesResponseType(typeof(AnimeGetModel), 200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
-        public async Task<ActionResult> GetAnime(string animeName)
+        public async Task<ActionResult> GetAnime([FromRoute] string animeName)
         {
+            // Validaiton of param name
             if (string.IsNullOrEmpty(animeName))
             {
                 return BadRequest("Anime name cannot be null or empty.");
             }
 
+            // I like to save everything lower case to avoid future case sensitivity
             var convertedName = animeName.ToLower();
 
             var result = await _animeService.GetAnimeAsync(convertedName);
@@ -67,10 +71,11 @@ namespace anime_api.Controllers
         [ProducesResponseType(typeof(IEnumerable<AnimeGetModel>), 200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
-        public async Task<ActionResult> GetAllAnime(int startIndex = 0, int pageSize = 50)
+        public async Task<ActionResult> GetAllAnime([FromRoute] int startIndex = 0, int pageSize = 50)
         {
             var result = await _animeService.GetAllAnimeAsync();
 
+            // Validaiton of missing result
             if (result == null || !result.Any())
             {
                 return NotFound("No data found.");
@@ -90,15 +95,16 @@ namespace anime_api.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(MultiResults), 200)]
         [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
-        public async Task<ActionResult> AddAnime(AnimePostModel anime)
+        public async Task<ActionResult> AddAnime([FromBody] AnimePostModel anime)
         {
+            // Validaiton of model
             var modelValidation = _postValidator.Validate(anime);
-
             if (!modelValidation.IsValid)
             {
                 return BadRequest(modelValidation.Errors);
             }
 
+            // Validaiton for existing record
             var checkName = await _animeService.GetAnimeAsync(anime.AnimeName.ToLower());
             if (string.IsNullOrEmpty(checkName?.AnimeName))
             {
@@ -126,11 +132,9 @@ namespace anime_api.Controllers
         [HttpPost("bulk")]
         [ProducesResponseType(typeof(MultiResults), 200)]
         [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
-        public async Task<ActionResult> AddAnimeBulk(List<AnimePostModel> animeList)
+        public async Task<ActionResult> AddAnimeBulk([FromBody] List<AnimePostModel> animeList)
         {
-            int successCount = 0;
-            int failureCount = 0;
-
+            // Validate model
             var validator = new AnimePostModelValidator(animeList);
             foreach (var anime in animeList)
             {
@@ -142,6 +146,7 @@ namespace anime_api.Controllers
                 }
             }
 
+            // Validate exisiting records
             foreach (var anime in animeList)
             {
                 var checkName = await _animeService.GetAnimeAsync(anime.AnimeName.ToLower());
@@ -153,26 +158,14 @@ namespace anime_api.Controllers
 
             var result = await _animeService.AddAnimeBulkAsync(animeList);
 
-            foreach (var record in result)
-            {
-                if (record.Key.Contains(ResponseStatus.Success.ToString()))
-                {
-                    successCount++;
-                }
-                else
-                {
-                    failureCount++;
-                }
-            }
-
             var finalResults = new MultiResults
             {
-                SuccessfulRecordsCount = successCount,
-                FailureRecordsCount = failureCount,
+                SuccessfulRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Success.ToString())),
+                FailureRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Failure.ToString())),
                 ResultList = result
             };
 
-            return successCount > 0 ? Ok(finalResults) : BadRequest(finalResults);
+            return finalResults.SuccessfulRecordsCount > 0 ? Ok(finalResults) : BadRequest(finalResults);
         }
         #endregion
 
@@ -182,27 +175,80 @@ namespace anime_api.Controllers
         /// </summary>
         /// <returns>Validation string for record update.</returns>
         [HttpPut]
-        [ProducesResponseType(typeof(string), 200)]
+        [ProducesResponseType(typeof(MultiResults), 200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
-        public async Task<ActionResult> UpdateAnime(AnimePutModel model)
+        public async Task<ActionResult> UpdateAnime([FromBody] AnimePutModel anime)
         {
-            if (model == null)
+            // Validaiton of model
+            var modelValidation = _putValidator.Validate(anime);
+            if (!modelValidation.IsValid)
             {
-                return BadRequest("Model cannot be null or empty.");
+                return BadRequest(modelValidation.Errors);
             }
 
-            var checkName = await _animeService.GetAnimeAsync(model.AnimeName.ToLower());
-            if (string.IsNullOrEmpty(checkName?.AnimeName) || model.AnimeId != checkName.AnimeId)
+            var checkName = await _animeService.GetAnimeAsync(anime.AnimeName.ToLower());
+            if (string.IsNullOrEmpty(checkName?.AnimeName) || anime.AnimeId != checkName.AnimeId)
             {
-                var result = await _animeService.UpdateAnimeAsync(model);
+                var result = await _animeService.UpdateAnimeAsync(anime);
 
-                return result == ResponseStatus.Success.ToString() ? Ok(result) : BadRequest("Error updating anime. Please validate and try again.");
+                var finalResults = new MultiResults
+                {
+                    SuccessfulRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Success.ToString())),
+                    FailureRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Failure.ToString())),
+                    ResultList = result
+                };
+
+                return finalResults.SuccessfulRecordsCount > 0 ? Ok(finalResults) : BadRequest(finalResults);
             }
             else
             {
-                return NotFound($"{model.AnimeName} doesn't exist. Please validate and try again.");
+                return NotFound($"{anime.AnimeName} doesn't exist. Please validate and try again.");
             }
+        }
+
+        /// <summary>
+        /// Update multiple anime in the database.
+        /// </summary>
+        /// <returns>Validation string for each record update.</returns>
+        [HttpPut("bulk")]
+        [ProducesResponseType(typeof(MultiResults), 200)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
+        public async Task<ActionResult> UpdateAnimeBulk([FromBody] List<AnimePutModel> animeList)
+        {
+            // Validate model
+            var validator = new AnimePutModelValidator(animeList);
+            foreach (var anime in animeList)
+            {
+                var validationResult = validator.Validate(anime);
+
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(validationResult.Errors);
+                }
+            }
+
+            // Validate exisiting records
+            foreach (var anime in animeList)
+            {
+                var checkName = await _animeService.GetAnimeAsync(anime.AnimeName.ToLower());
+                if (!string.IsNullOrEmpty(checkName?.AnimeName))
+                {
+                    return BadRequest($"Duplicate record detected: {anime.AnimeName}. Please validate and try again.");
+                }
+            }
+
+            var result = await _animeService.UpdateAnimeBulkAsync(animeList);
+
+            var finalResults = new MultiResults
+            {
+                SuccessfulRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Success.ToString())),
+                FailureRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Failure.ToString())),
+                ResultList = result
+            };
+
+            return finalResults.SuccessfulRecordsCount > 0 ? Ok(finalResults) : BadRequest(finalResults);
         }
         #endregion
 
@@ -215,7 +261,7 @@ namespace anime_api.Controllers
         [ProducesResponseType(typeof(string), 200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
-        public async Task<ActionResult> DeleteAnime(string animeName)
+        public async Task<ActionResult> DeleteAnime([FromRoute]string animeName)
         {
             if (string.IsNullOrEmpty(animeName))
             {
