@@ -39,6 +39,7 @@ namespace anime_api
 
             // Register FluentValidation validators
             services.AddValidatorsFromAssemblyContaining<AnimePostModelValidator>();
+            services.AddValidatorsFromAssemblyContaining<AnimePutModelValidator>();
 
             // Configure FluentValidation with MVC
             services.AddFluentValidationAutoValidation();
