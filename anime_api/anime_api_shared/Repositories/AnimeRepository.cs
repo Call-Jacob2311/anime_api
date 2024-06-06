@@ -58,7 +58,14 @@ namespace anime_api_shared.Repositories
         /// </summary>
         /// <param name="animeName">The name of the anime to delete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the result of the delete operation.</returns>
-        Task<string> DeleteAnimeAsync(string animeName);
+        Task<Dictionary<string, string>> DeleteAnimeAsync(string animeName);
+
+        /// <summary>
+        /// Deletes a string list of anime by name.
+        /// </summary>
+        /// <param name="animeList">The anime list to be deleted.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the result of the delete operation.</returns>
+        Task<Dictionary<string, string>> DeleteAnimeBulkAsync(List<string> animeList);
     }
 
     /// <summary>
@@ -289,29 +296,58 @@ namespace anime_api_shared.Repositories
 
         #region DELETE
         /// <inheritdoc />
-        public async Task<string> DeleteAnimeAsync(string animeName)
+        public async Task<Dictionary<string, string>> DeleteAnimeAsync(string animeName)
         {
-            using (var connection = await _dbConnectionFactory.CreateConnectionAsync())
+            var results = new Dictionary<string, string>();
+            using var connection = await _dbConnectionFactory.CreateConnectionAsync();
+            try
             {
-                try
+                var parameters = new DynamicParameters();
+                parameters.Add("@animeName", animeName, DbType.String);
+
+                var execute = await connection.ExecuteAsync("DeleteAnimeByName", parameters, commandType: CommandType.StoredProcedure);
+                results.Add("Success: " + animeName, "Successfully deleted the record: " + animeName);
+                return results;
+            }
+            catch (SqlException ex)
+            {
+                Log.Error(ex, "Error deleting anime details for: {AnimeName}", animeName);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Unexpected error deleting anime details for: {AnimeName}", animeName);
+                throw;
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Dictionary<string, string>> DeleteAnimeBulkAsync(List<string> animeList)
+        {
+            var results = new Dictionary<string, string>();
+            using var connection = await _dbConnectionFactory.CreateConnectionAsync();
+            try
+            {
+                foreach (var animeName in animeList)
                 {
                     var parameters = new DynamicParameters();
                     parameters.Add("@animeName", animeName, DbType.String);
 
-                    var result = await connection.ExecuteAsync("DeleteAnimeByName", parameters, commandType: CommandType.StoredProcedure);
-
-                    return "Success";
+                    var execute = await connection.ExecuteAsync("DeleteAnimeByName", parameters, commandType: CommandType.StoredProcedure);
+                    results.Add("Success: " + animeName, "Successfully deleted the record: " + animeName);
                 }
-                catch (SqlException ex)
-                {
-                    Log.Error(ex, "Error deleting anime details for: {AnimeName}", animeName);
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Unexpected error deleting anime details for: {AnimeName}", animeName);
-                    throw;
-                }
+                
+                return results;
+            }
+            catch (SqlException ex)
+            {
+                Log.Error(ex, "Error deleting anime list.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Unexpected error deleting anime list.");
+                throw;
             }
         }
         #endregion

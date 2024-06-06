@@ -11,7 +11,8 @@ namespace anime_api_shared.Services
         Task<Dictionary<string, string>> AddAnimeBulkAsync(List<AnimePostModel> animeList);
         Task<Dictionary<string, string>> UpdateAnimeAsync(AnimePutModel model);
         Task<Dictionary<string, string>> UpdateAnimeBulkAsync(List<AnimePutModel> animeList);
-        Task<string> DeleteAnimeAsync(string animeName);
+        Task<Dictionary<string, string>> DeleteAnimeAsync(string animeName);
+        Task<Dictionary<string, string>> DeleteAnimeBulkAsync(List<string> animeList);
     }
 
     public class AnimeService : IAnimeService
@@ -78,7 +79,7 @@ namespace anime_api_shared.Services
             return await _repository.UpdateAnimeBulkAsync(animeList);
         }
 
-        public async Task<string> DeleteAnimeAsync(string animeName)
+        public async Task<Dictionary<string, string>> DeleteAnimeAsync(string animeName)
         {
             if (string.IsNullOrEmpty(animeName))
             {
@@ -86,6 +87,16 @@ namespace anime_api_shared.Services
             }
 
             return await _repository.DeleteAnimeAsync(animeName);
+        }
+
+        public async Task<Dictionary<string, string>> DeleteAnimeBulkAsync(List<string> animeList)
+        {
+            if (animeList == null)
+            {
+                throw new ArgumentException("Payload model cannot be null or empty.", nameof(animeList));
+            }
+
+            return await _repository.DeleteAnimeBulkAsync(animeList);
         }
     }
 }

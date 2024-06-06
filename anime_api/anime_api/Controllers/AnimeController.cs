@@ -11,24 +11,17 @@ namespace anime_api.Controllers
     /// <summary>
     /// API controller for handling anime data.
     /// </summary>
+    /// <remarks>
+    /// Initializes a new instance of the <see cref="AnimeController"/> class.
+    /// </remarks>
+    /// <param name="animeService">The anime service.</param>
     [ApiController]
     [Route("api/v1/anime")]
-    public class AnimeController : ControllerBase
+    public class AnimeController(IAnimeService animeService, IValidator<AnimePostModel> postValidator, IValidator<AnimePutModel> putValidator) : ControllerBase
     {
-        private readonly IAnimeService _animeService;
-        private readonly IValidator<AnimePostModel> _postValidator;
-        private readonly IValidator<AnimePutModel> _putValidator;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AnimeController"/> class.
-        /// </summary>
-        /// <param name="animeService">The anime service.</param>
-        public AnimeController(IAnimeService animeService, IValidator<AnimePostModel> postValidator, IValidator<AnimePutModel> putValidator)
-        {
-            _animeService = animeService ?? throw new ArgumentNullException(nameof(animeService));
-            _postValidator = postValidator ?? throw new ArgumentNullException(nameof(postValidator));
-            _putValidator = putValidator ?? throw new ArgumentNullException(nameof(putValidator));
-        }
+        private readonly IAnimeService _animeService = animeService ?? throw new ArgumentNullException(nameof(animeService));
+        private readonly IValidator<AnimePostModel> _postValidator = postValidator ?? throw new ArgumentNullException(nameof(postValidator));
+        private readonly IValidator<AnimePutModel> _putValidator = putValidator ?? throw new ArgumentNullException(nameof(putValidator));
 
         #region GET endpoints
         /// <summary>
@@ -258,7 +251,7 @@ namespace anime_api.Controllers
         /// </summary>
         /// <returns>Validation string for record deletion.</returns>
         [HttpDelete("{animeName}")]
-        [ProducesResponseType(typeof(string), 200)]
+        [ProducesResponseType(typeof(MultiResults), 200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
         public async Task<ActionResult> DeleteAnime([FromRoute]string animeName)
@@ -279,7 +272,63 @@ namespace anime_api.Controllers
 
             var result = await _animeService.DeleteAnimeAsync(convertedName);
 
-            return Ok(result);
+            var finalResults = new MultiResults
+            {
+                SuccessfulRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Success.ToString())),
+                FailureRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Failure.ToString())),
+                ResultList = result
+            };
+
+            return finalResults.SuccessfulRecordsCount > 0 ? Ok(finalResults) : BadRequest(finalResults);
+        }
+
+        /// <summary>
+        /// Soft delete multiple anime in the database.
+        /// </summary>
+        /// <param name="animeList">List of anime names to be deleted.</param>
+        /// <returns>Validation string for each record deleted.</returns>
+        [HttpDelete("bulk")]
+        [ProducesResponseType(typeof(MultiResults), 200)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(typeof(ExceptionErrorModel), 400)]
+        public async Task<ActionResult> DeleteAnimeBulk([FromBody] List<string> animeList)
+        {
+            if (animeList == null || animeList.Count == 0)
+            {
+                return BadRequest("Anime list cannot be null or empty.");
+            }
+
+            var convertedNames = new List<string>();
+
+            foreach (var anime in animeList)
+            {
+                if (string.IsNullOrEmpty(anime))
+                {
+                    return BadRequest("Anime name cannot be null or empty.");
+                }
+                convertedNames.Add(anime.ToLower());
+            }
+
+            foreach (var name in convertedNames)
+            {
+                var getResult = await _animeService.GetAnimeAsync(name);
+
+                if (string.IsNullOrEmpty(getResult?.AnimeName))
+                {
+                    return NotFound($"{name} doesn't exist in the database. Please validate and try again.");
+                }
+            }
+
+            var result = await _animeService.DeleteAnimeBulkAsync(convertedNames);
+
+            var finalResults = new MultiResults
+            {
+                SuccessfulRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Success.ToString())),
+                FailureRecordsCount = result.Count(r => r.Key.Contains(ResponseStatus.Failure.ToString())),
+                ResultList = result
+            };
+
+            return finalResults.SuccessfulRecordsCount > 0 ? Ok(finalResults) : BadRequest(finalResults);
         }
         #endregion
     }

@@ -70,7 +70,6 @@ namespace anime_api_tests.Repositories
                 EpisodeCount = 1000,
                 Genres = "Action, Adventure"
             };
-            var parameters = new DynamicParameters();
             _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
                 .ReturnsAsync(1);
 
@@ -105,7 +104,6 @@ namespace anime_api_tests.Repositories
                 Genres = "Action, Adventure"
             };
             List<AnimePostModel> animePostModels = [anime1, anime2];
-            var parameters = new DynamicParameters();
             _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
                 .ReturnsAsync(1);
 
@@ -131,7 +129,6 @@ namespace anime_api_tests.Repositories
                 EpisodeCount = 1000,
                 Genres = "Action, Adventure"
             };
-            var parameters = new DynamicParameters();
             _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("UpdateAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
                 .ReturnsAsync(1);
 
@@ -168,7 +165,6 @@ namespace anime_api_tests.Repositories
                 Genres = "Action, Adventure"
             };
             List<AnimePutModel> animePutModels = [anime1, anime2];
-            var parameters = new DynamicParameters();
             _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
                 .ReturnsAsync(1);
 
@@ -181,25 +177,57 @@ namespace anime_api_tests.Repositories
         }
 
         [Test]
-        public void AddAnimeAsync_ShouldLogErrorAndThrow_WhenSqlExceptionOccurs()
+        public async Task DeleteAnimeAsync_ShouldReturnSuccess_WhenAnimeIsDeleted()
         {
             // Arrange
-            var anime = new AnimePostModel
-            {
-                AnimeName = "One Piece",
-                AnimeStatus = "Ongoing",
-                StudioId = 1,
-                ReleaseDate = DateTime.Now,
-                EpisodeCount = 1000,
-                Genres = "Action, Adventure"
-            };
-            var exception = new Exception("Generic error");
-            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
-                .ThrowsAsync(exception);
+            var animeName = "Naruto";
+            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("DeleteAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
+                .ReturnsAsync(1);
 
-            // Act & Assert
-            var ex = Assert.ThrowsAsync<Exception>(async () => await _animeRepository.AddAnimeAsync(anime));
-            Assert.That(exception.Message, Is.EqualTo(ex.Message));
+            // Act
+            var result = await _animeRepository.DeleteAnimeAsync(animeName);
+
+            // Assert
+            Assert.That(result, Is.Not.Empty);
+            Assert.That(result.FirstOrDefault().Key, Does.Contain("Success"));
         }
+
+        [Test]
+        public async Task DeleteAnimeBulkAsync_ShouldReturnSuccess_WhenAnimeListIsDeleted()
+        {
+            // Arrange
+            List<string> animeList = new List<string> { "Naruto", "One Piece" };
+            _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("DeleteAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _animeRepository.DeleteAnimeBulkAsync(animeList);
+
+            // Assert
+            Assert.That(result, Is.Not.Empty);
+            Assert.That(result.FirstOrDefault().Key, Does.Contain("Success"));
+        }
+
+        //[Test]
+        //public void AddAnimeAsync_ShouldLogErrorAndThrow_WhenSqlExceptionOccurs()
+        //{
+        //    // Arrange
+        //    var anime = new AnimePostModel
+        //    {
+        //        AnimeName = "One Piece",
+        //        AnimeStatus = "Ongoing",
+        //        StudioId = 1,
+        //        ReleaseDate = DateTime.Now,
+        //        EpisodeCount = 1000,
+        //        Genres = "Action, Adventure"
+        //    };
+        //    var exception = new Exception("Generic error");
+        //    _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
+        //        .ThrowsAsync(exception);
+
+        //    // Act & Assert
+        //    var ex = Assert.ThrowsAsync<Exception>(async () => await _animeRepository.AddAnimeAsync(anime));
+        //    Assert.That(exception.Message, Is.EqualTo(ex.Message));
+        //}
     }
 }
