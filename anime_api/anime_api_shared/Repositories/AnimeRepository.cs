@@ -154,13 +154,22 @@ namespace anime_api_shared.Repositories
             {
                 DynamicParameters parameters = new();
                 parameters.Add("@animeName", anime.AnimeName, DbType.String);
-                parameters.Add("@animeStatus", anime.AnimeStatus, DbType.String);
+                parameters.Add("@animeStatusId", anime.AnimeStatusId, DbType.Int16);
                 parameters.Add("@studioId", anime.StudioId, DbType.Int16);
                 parameters.Add("@releaseDate", anime.ReleaseDate, DbType.Date);
                 parameters.Add("@episodeCount", anime.EpisodeCount, DbType.Int16);
                 parameters.Add("@genres", anime.Genres, DbType.String);
+                parameters.Add("@thumbNailLink", anime.ThumbnailLink, DbType.String);
+                parameters.Add("@seasonId", anime.SeasonId, DbType.Int16);
+                parameters.Add("@animeOSTId", anime.AnimeOSTId, DbType.Int16);
+                parameters.Add("@trueName", anime.TrueName, DbType.String);
+                parameters.Add("@wikiUrl", anime.WikiUrl, DbType.String);
+                parameters.Add("@shortHandNames", anime.ShortHandNames, DbType.String);
                 parameters.Add("@recordCreation", DateTime.Now, DbType.DateTime);
+                parameters.Add("@recordUpdated", DateTime.Now, DbType.DateTime);
+                parameters.Add("@recordDeleted", DbType.Boolean, 0);
                 parameters.Add("@createdBy", "Jacob C.", DbType.String);
+                parameters.Add("@updatedBy", "Jacob C.", DbType.String);
                 parameters.Add("@response", DbType.Int32, direction: ParameterDirection.ReturnValue); // Output of the stored procedure gets saved into this param.
 
                 var execute = await connection.ExecuteAsync("AddAnime", parameters, commandType: CommandType.StoredProcedure);
@@ -191,7 +200,7 @@ namespace anime_api_shared.Repositories
                 {
                     DynamicParameters parameters = new();
                     parameters.Add("@animeName", anime.AnimeName, DbType.String);
-                    parameters.Add("@animeStatus", anime.AnimeStatus, DbType.String);
+                    parameters.Add("@animeStatus", anime.AnimeStatusId, DbType.String);
                     parameters.Add("@studioId", anime.StudioId, DbType.Int16);
                     parameters.Add("@releaseDate", anime.ReleaseDate, DbType.Date);
                     parameters.Add("@episodeCount", anime.EpisodeCount, DbType.Int16);
