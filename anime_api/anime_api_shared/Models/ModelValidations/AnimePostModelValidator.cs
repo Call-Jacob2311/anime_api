@@ -26,6 +26,9 @@ namespace anime_api_shared.Models.ModelValidations
 
             RuleFor(x => x.Genres)
                 .NotEmpty().WithMessage("Genres are required.");
+
+            RuleFor(x => x.AnimeOSTId)
+                .GreaterThan(0).WithMessage("Episode count must be greater than 0.");
         }
 
         private static bool IsUniqueName(AnimePostModel model, IEnumerable<AnimePostModel> existingAnimes)
