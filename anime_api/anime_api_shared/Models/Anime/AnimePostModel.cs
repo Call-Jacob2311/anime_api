@@ -60,28 +60,28 @@ namespace anime_api_shared.Models.Anime
         public int SeasonId { get; set; }
 
         /// <summary>
-        /// Gets or sets the the ost for the anime.
+        /// Gets or sets the ost for the anime.
         /// </summary>
         [Required]
         [Range(1, int.MaxValue, ErrorMessage = "Anime OST id count must be greater than 0.")]
         public int AnimeOSTId { get; set; }
 
         /// <summary>
-        /// Gets or sets the the ost for the anime.
+        /// Gets or sets the true name (japanese) for the anime.
         /// </summary>
         [Required]
         [StringLength(200, ErrorMessage = "Thumb nail link can't be longer than 200 characters.")]
         public string TrueName { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the the ost for the anime.
+        /// Gets or sets the wiki url for the anime.
         /// </summary>
         [Required]
         [StringLength(200, ErrorMessage = "Thumb nail link can't be longer than 200 characters.")]
         public string WikiUrl { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the the ost for the anime.
+        /// Gets or sets the short hand names for the anime
         /// </summary>
         [Required]
         [StringLength(200, ErrorMessage = "Thumb nail link can't be longer than 200 characters.")]

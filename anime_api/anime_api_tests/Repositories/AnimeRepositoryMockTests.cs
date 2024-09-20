@@ -63,12 +63,18 @@ namespace anime_api_tests.Repositories
             // Arrange
             var anime1 = new AnimePostModel
             {
-                AnimeName = "One Piece",
-                AnimeStatus = "Ongoing",
-                StudioId = 1,
-                ReleaseDate = DateTime.Now,
-                EpisodeCount = 1000,
-                Genres = "Action, Adventure"
+              AnimeName = "sword art online",
+              AnimeStatusId = 1,
+              StudioId = 1,
+              ReleaseDate = DateTime.Now.AddDays(-10),
+              EpisodeCount = 12,
+              Genres = "action, romance",
+              ThumbnailLink = "string",
+              SeasonId = 1,
+              AnimeOSTId = 1,
+              TrueName = "Sword Art Online",
+              WikiUrl = "string",
+              ShortHandNames = "SAO"
             };
             _dbConnectionMock.SetupDapperAsync(c => c.ExecuteAsync("AddAnime", It.IsAny<DynamicParameters>(), null, null, CommandType.StoredProcedure))
                 .ReturnsAsync(1);
@@ -88,7 +94,7 @@ namespace anime_api_tests.Repositories
             var anime1 = new AnimePostModel
             {
                 AnimeName = "One Piece",
-                AnimeStatus = "Ongoing",
+                AnimeStatusId = 1,
                 StudioId = 1,
                 ReleaseDate = DateTime.Now,
                 EpisodeCount = 1000,
@@ -97,7 +103,7 @@ namespace anime_api_tests.Repositories
             var anime2 = new AnimePostModel
             {
                 AnimeName = "Naruto",
-                AnimeStatus = "Completed",
+                AnimeStatusId = 1,
                 StudioId = 1,
                 ReleaseDate = DateTime.Now,
                 EpisodeCount = 1000,
