@@ -12,8 +12,9 @@ namespace anime_api_shared.Models.ModelValidations
                 .MaximumLength(100).WithMessage("Anime name must not exceed 100 characters.")
                 .Must((model, name) => IsUniqueName(model, existingAnimes)).WithMessage("Anime name must be unique.");
 
-            RuleFor(x => x.AnimeStatusId)
-                .GreaterThan(0).WithMessage("Studio ID must be greater than 0.");
+            RuleFor(x => x.AnimeStatus)
+                .NotEmpty().WithMessage("Anime status is required.")
+                .Must(status => status == "Ongoing" || status == "Completed").WithMessage("Anime status must be either 'Ongoing' or 'Completed'.");
 
             RuleFor(x => x.StudioId)
                 .GreaterThan(0).WithMessage("Studio ID must be greater than 0.");
